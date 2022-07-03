@@ -45,10 +45,35 @@ public class WypozyczalniaParser {
                 handleAddRentCommand();
             } else if (komenda.equalsIgnoreCase("zwrocwynajetysamochod")) { // Zwróć wynajęty samochod
                 handleReturnRentedCarCommand();
+            } else if (komenda.equalsIgnoreCase("sprawdz")) {
+                handleCheckCarCommand();// Sprawdź dostępność samochodu
             }
-            // Sprawdź dostępność samochodu
+
 
         } while (!komenda.equals("wyjdz"));
+    }
+
+    private void handleCheckCarCommand() {
+        System.out.println("Provide id of the car");
+        Long id = scanner.nextLong();
+
+        Optional<Car> samochodOptional = daoCar.znajdzPoId(id, Car.class);
+        if (samochodOptional.isPresent()) {
+            Car samochod = samochodOptional.get();
+
+            if(sprawdzCzySamochodJestDostepny(samochod)){
+                System.out.println("Tak, jest dostępny");
+            }else{
+                System.out.println("Nie, nie jest dostępny");
+            }
+        } else {
+            System.out.println("Samochod nie znaleziony");
+        }
+    }
+
+    private boolean sprawdzCzySamochodJestDostepny(Car samochod) {
+        Optional<CarRental> optionalCarRental = znajdzAktywnyWynajem(samochod);
+        return !optionalCarRental.isPresent();
     }
 
     private void handleReturnRentedCarCommand() {
@@ -60,14 +85,14 @@ public class WypozyczalniaParser {
             Car samochod = samochodOptional.get();
 
             Optional<CarRental> optionalCarRental = znajdzAktywnyWynajem(samochod);
-            if (optionalCarRental.isPresent()){
+            if (optionalCarRental.isPresent()) {
                 CarRental carRental = optionalCarRental.get();
 
                 // ustaw zakończenie najmu na obecną datę i godzinę
                 carRental.setReturnDateTime(LocalDateTime.now());
 
                 daoCarRental.aktualizuj(carRental);
-            }else {
+            } else {
                 System.out.println("Samochod nie ma aktywnego wynajmu");
             }
         } else {
@@ -98,17 +123,21 @@ public class WypozyczalniaParser {
         if (samochodOptional.isPresent()) {
             Car samochod = samochodOptional.get();
 
-            System.out.println("Podaj imie");
-            String name = scanner.next();
+            if(sprawdzCzySamochodJestDostepny(samochod)) {
+                System.out.println("Podaj imie");
+                String name = scanner.next();
 
-            System.out.println("Podaj nazwisko");
-            String surname = scanner.next();
+                System.out.println("Podaj nazwisko");
+                String surname = scanner.next();
 
-            LocalDateTime dataCzasWynajmu = LocalDateTime.now();
-            System.out.println("Data i godzina wynajmu: " + dataCzasWynajmu);
+                LocalDateTime dataCzasWynajmu = LocalDateTime.now();
+                System.out.println("Data i godzina wynajmu: " + dataCzasWynajmu);
 
-            CarRental carRental = new CarRental(name, surname, dataCzasWynajmu, samochod);
-            daoCarRental.dodaj(carRental);
+                CarRental carRental = new CarRental(name, surname, dataCzasWynajmu, samochod);
+                daoCarRental.dodaj(carRental);
+            }else {
+                System.out.println("Samochod jest już wynajęty.");
+            }
         } else {
             System.out.println("Samochod nie znaleziony");
         }
