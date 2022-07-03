@@ -19,5 +19,6 @@
         <!-- DB schema will be updated if needed -->
         <!-- Tu będą modele -->
         <mapping class="pl.sda.arppl4.rental.model.Car"/>
+        <mapping class="pl.sda.arppl4.rental.model.CarRental"/>
     </session-factory>
 </hibernate-configuration>

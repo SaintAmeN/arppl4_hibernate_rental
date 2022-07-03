@@ -4,8 +4,10 @@ import pl.sda.arppl4.rental.dao.GenericDao;
 import pl.sda.arppl4.rental.model.Car;
 import pl.sda.arppl4.rental.model.CarBodyType;
 import pl.sda.arppl4.rental.model.CarGearBox;
+import pl.sda.arppl4.rental.model.CarRental;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -15,11 +17,13 @@ public class WypozyczalniaParser {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final Scanner scanner;
-    private final GenericDao<Car> dao;
+    private final GenericDao<Car> daoCar;
+    private final GenericDao<CarRental> daoCarRental;
 
-    public WypozyczalniaParser(Scanner scanner, GenericDao<Car> dao) {
+    public WypozyczalniaParser(Scanner scanner, GenericDao<Car> daoCar, GenericDao<CarRental> daoCarRental) {
         this.scanner = scanner;
-        this.dao = dao;
+        this.daoCar = daoCar;
+        this.daoCarRental = daoCarRental;
     }
 
     public void wykonaj() {
@@ -37,19 +41,48 @@ public class WypozyczalniaParser {
                 handleDeleteCommand();
             } else if (komenda.equalsIgnoreCase("update")) {
                 handleUpdateCommand();
+            } else if (komenda.equalsIgnoreCase("dodajwynajem")) { // Dodaj wynajem
+                handleAddRentCommand();
             }
+            // Zwróć samochód ( z wynajmu )
+            // Sprawdź dostępność samochodu
+
 
         } while (!komenda.equals("wyjdz"));
     }
 
-    private void handleDeleteCommand() {
-        System.out.println("Provide id of the product");
+    private void handleAddRentCommand() {
+        System.out.println("Provide id of the car");
         Long id = scanner.nextLong();
 
-        Optional<Car> samochodOptional = dao.znajdzPoId(id, Car.class);
+        Optional<Car> samochodOptional = daoCar.znajdzPoId(id, Car.class);
         if (samochodOptional.isPresent()) {
             Car samochod = samochodOptional.get();
-            dao.usun(samochod);
+
+            System.out.println("Podaj imie");
+            String name = scanner.next();
+
+            System.out.println("Podaj nazwisko");
+            String surname = scanner.next();
+
+            LocalDateTime dataCzasWynajmu = LocalDateTime.now();
+            System.out.println("Data i godzina wynajmu: " + dataCzasWynajmu);
+
+            CarRental carRental = new CarRental(name, surname, dataCzasWynajmu, samochod);
+            daoCarRental.dodaj(carRental);
+        } else {
+            System.out.println("Samochod nie znaleziony");
+        }
+    }
+
+    private void handleDeleteCommand() {
+        System.out.println("Provide id of the car");
+        Long id = scanner.nextLong();
+
+        Optional<Car> samochodOptional = daoCar.znajdzPoId(id, Car.class);
+        if (samochodOptional.isPresent()) {
+            Car samochod = samochodOptional.get();
+            daoCar.usun(samochod);
             System.out.println("Samochod usuniety");
         } else {
             System.out.println("Samochod nie znaleziony");
@@ -60,7 +93,7 @@ public class WypozyczalniaParser {
         System.out.println("Podaj id samochodu do aktualizacji:");
         Long id = scanner.nextLong();
 
-        Optional<Car> samochodOptional = dao.znajdzPoId(id, Car.class);
+        Optional<Car> samochodOptional = daoCar.znajdzPoId(id, Car.class);
         if (samochodOptional.isPresent()) {
             Car car = samochodOptional.get();
 
@@ -83,7 +116,7 @@ public class WypozyczalniaParser {
                     System.out.println("Field with this name is not handled.");
             }
 
-            dao.aktualizuj(car);
+            daoCar.aktualizuj(car);
             System.out.println("Samochod zaktualizowano.");
         } else {
 
@@ -110,28 +143,29 @@ public class WypozyczalniaParser {
         System.out.println("Podaj pojemnosc silnika:");
         Double pojemnoscSilnika = scanner.nextDouble();
 
-        Car samochod = new Car(null, nazwa, model, dataProdukcji,typNadwozia,  iloscPasazerow,  typSkrzyni, pojemnoscSilnika);
-        dao.dodaj(samochod);
+        Car samochod = new Car(nazwa, model, dataProdukcji, typNadwozia, iloscPasazerow, typSkrzyni, pojemnoscSilnika);
+        daoCar.dodaj(samochod);
     }
 
     private void handleListCommand() {
-        List<Car> carList = dao.list(Car.class);
+        List<Car> carList = daoCar.list(Car.class);
         for (Car samochod : carList) {
+            // wypisz samochód, przez co wywołujemy pobranie relacji 'rental'
             System.out.println(samochod);
         }
         System.out.println();
     }
 
-    private void handleReturnCar(){
+    private void handleReturnCar() {
         System.out.println("Podaj id samochodu");
         Long id = scanner.nextLong();
 
-        Optional<Car> samochodOptional = dao.znajdzPoId(id, Car.class);
-        if(samochodOptional.isPresent()) {
+        Optional<Car> samochodOptional = daoCar.znajdzPoId(id, Car.class);
+        if (samochodOptional.isPresent()) {
             Car samochod = samochodOptional.get();
-            dao.usun(samochod);
+            daoCar.usun(samochod);
             System.out.println("Car usuniety");
-        }else{
+        } else {
             System.out.println("Nie znaleziono samochodu");
         }
     }

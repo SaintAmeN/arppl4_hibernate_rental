@@ -1,6 +1,9 @@
 package pl.sda.arppl4.rental.dao;
 
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
@@ -54,13 +57,46 @@ public class GenericDao<T> {
         }
     }
 
+//    public List<T> list(Class<T> classType) {
+//        List<T> list = new ArrayList<>();
+//
+//        SessionFactory fabrykaPolaczen = HibernateUtil.getSessionFactory();
+//        try (Session session = fabrykaPolaczen.openSession()) { // try-with-resources
+//            TypedQuery<T> zapytanie = session.createQuery("from " + classType.getName(), classType);
+//            List<T> wynikZapytania = zapytanie.getResultList();
+//
+//            list.addAll(wynikZapytania);
+//        } catch (SessionException sessionException) {
+//            System.err.println("Błąd wczytywania danych.");
+//        }
+//
+//        return list;
+//    }
+
     public List<T> list(Class<T> classType) {
         List<T> list = new ArrayList<>();
 
         SessionFactory fabrykaPolaczen = HibernateUtil.getSessionFactory();
-        try (Session session = fabrykaPolaczen.openSession()) {
-            TypedQuery<T> zapytanie = session.createQuery("from " + classType.getName(), classType);
-            List<T> wynikZapytania = zapytanie.getResultList();
+        try (Session session = fabrykaPolaczen.openSession()) { // try-with-resources
+
+            CriteriaBuilder cb = session.getCriteriaBuilder();
+
+            // select *...
+            // Zapytanie o obiekt typu T
+            // Criteria ponieważ może zawierać dodatkowe kryteria wyszukiwania
+            CriteriaQuery<T> criteriaQuery = cb.createQuery(classType);
+
+            // ... from TABLE t ...
+            // Root reprezentuje tabelę z której pobieramy rekordy
+            Root<T> rootTable = criteriaQuery.from(classType);
+
+            // (opcjonalnie) ... where
+            // select * from table t;
+            // Uzupełnienie zapytania Criteria Query o tabelę
+            criteriaQuery.select(rootTable);
+
+            // wywołanie zapytania
+            List<T> wynikZapytania = session.createQuery(criteriaQuery).list();
 
             list.addAll(wynikZapytania);
         } catch (SessionException sessionException) {
