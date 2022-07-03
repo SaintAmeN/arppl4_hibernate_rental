@@ -33,7 +33,7 @@ public class WypozyczalniaParser {
             komenda = scanner.next();
             if (komenda.equalsIgnoreCase("dodaj")) {
                 handleAddCommand();
-            } else if (komenda.equalsIgnoreCase("zwroc")) {
+            } else if (komenda.equalsIgnoreCase("zwroc")) { // znajdź samochód i wypisz jego informacje
                 handleReturnCar();
             } else if (komenda.equalsIgnoreCase("lista")) {
                 handleListCommand();
@@ -43,12 +43,51 @@ public class WypozyczalniaParser {
                 handleUpdateCommand();
             } else if (komenda.equalsIgnoreCase("dodajwynajem")) { // Dodaj wynajem
                 handleAddRentCommand();
+            } else if (komenda.equalsIgnoreCase("zwrocwynajetysamochod")) { // Zwróć wynajęty samochod
+                handleReturnRentedCarCommand();
             }
-            // Zwróć samochód ( z wynajmu )
             // Sprawdź dostępność samochodu
 
-
         } while (!komenda.equals("wyjdz"));
+    }
+
+    private void handleReturnRentedCarCommand() {
+        System.out.println("Provide id of the car");
+        Long id = scanner.nextLong();
+
+        Optional<Car> samochodOptional = daoCar.znajdzPoId(id, Car.class);
+        if (samochodOptional.isPresent()) {
+            Car samochod = samochodOptional.get();
+
+            Optional<CarRental> optionalCarRental = znajdzAktywnyWynajem(samochod);
+            if (optionalCarRental.isPresent()){
+                CarRental carRental = optionalCarRental.get();
+
+                // ustaw zakończenie najmu na obecną datę i godzinę
+                carRental.setReturnDateTime(LocalDateTime.now());
+
+                daoCarRental.aktualizuj(carRental);
+            }else {
+                System.out.println("Samochod nie ma aktywnego wynajmu");
+            }
+        } else {
+            System.out.println("Samochod nie znaleziony");
+        }
+    }
+
+    private Optional<CarRental> znajdzAktywnyWynajem(Car samochod) {
+        // jeśli nie znaleźliśmy żadnych wynajmów na liście, to znaczy że nie znajdziemy aktywnego najmu.
+        if (samochod.getCarRentals().isEmpty()) {
+            return Optional.empty();
+        }
+
+        for (CarRental carRental : samochod.getCarRentals()) {
+            if (carRental.getReturnDateTime() == null) { // znajdź aktywny wynajem, bo samochód nie został zwrócony
+                return Optional.of(carRental);
+            }
+        }
+
+        return Optional.empty();
     }
 
     private void handleAddRentCommand() {
