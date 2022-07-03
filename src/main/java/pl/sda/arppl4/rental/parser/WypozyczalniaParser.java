@@ -33,9 +33,62 @@ public class WypozyczalniaParser {
                 handleReturnCar();
             } else if (komenda.equalsIgnoreCase("lista")) {
                 handleListCommand();
+            } else if (komenda.equalsIgnoreCase("usun")) {
+                handleDeleteCommand();
+            } else if (komenda.equalsIgnoreCase("update")) {
+                handleUpdateCommand();
             }
 
         } while (!komenda.equals("wyjdz"));
+    }
+
+    private void handleDeleteCommand() {
+        System.out.println("Provide id of the product");
+        Long id = scanner.nextLong();
+
+        Optional<Car> samochodOptional = dao.znajdzPoId(id, Car.class);
+        if (samochodOptional.isPresent()) {
+            Car samochod = samochodOptional.get();
+            dao.usun(samochod);
+            System.out.println("Samochod usuniety");
+        } else {
+            System.out.println("Samochod nie znaleziony");
+        }
+    }
+
+    private void handleUpdateCommand() {
+        System.out.println("Podaj id samochodu do aktualizacji:");
+        Long id = scanner.nextLong();
+
+        Optional<Car> samochodOptional = dao.znajdzPoId(id, Car.class);
+        if (samochodOptional.isPresent()) {
+            Car car = samochodOptional.get();
+
+            System.out.println("Co chciałbys uakttualnic? [nazwa, date produkcji");
+            String output = scanner.next();
+            switch (output) {
+                case "nazwa":
+                    System.out.println("Podaj nazwe:");
+                    String nazwa = scanner.next();
+
+                    car.setName(nazwa);
+                    break;
+                case "dataProdukcji":
+                    LocalDate dataWypozyczenia = zaladujDateProdukcji();
+
+                    car.setProductionDate(dataWypozyczenia);
+                    break;
+
+                default:
+                    System.out.println("Field with this name is not handled.");
+            }
+
+            dao.aktualizuj(car);
+            System.out.println("Samochod zaktualizowano.");
+        } else {
+
+            System.out.println("Nie znaleziono samochodu");
+        }
     }
 
     private void handleAddCommand() {
@@ -82,6 +135,7 @@ public class WypozyczalniaParser {
             System.out.println("Nie znaleziono samochodu");
         }
     }
+
     private LocalDate zaladujDateProdukcji() {
         LocalDate dataProdukcji = null;
         do {
